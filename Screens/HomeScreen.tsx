@@ -12,20 +12,33 @@ import {
 import DocumentScanner from 'react-native-document-scanner-plugin';
 
 import {FlatGrid} from 'react-native-super-grid';
-import ImageView from 'react-native-image-viewing';
 import uuid from 'react-native-uuid';
+import Preview from '../components/Preview';
+
 
 const HomeScreen = () => {
-  const [scannedImage, setScannedImage] = useState<{id: string; uri: string}[]>(
+  const [imageList, setImageList] = useState<{id: string; uri: string}[]>(
     [
-      {
-        id: '1',
-        uri: 'file:///storage/emulated/0/Android/data/com.awesometsproject/files/Pictures/DOCUMENT_SCAN_1_20221209_192717153649898559833900.jpg',
-      },
     ],
   );
+
+  function deleteImage(id)
+  {
+    setImageList(imageList.filter(item => item.id != id))
+  }
+
   const [showImage, setShowImage] = useState<boolean>(false);
-  const [previewImage, setPreviewImage] = useState<string>('');
+  const [previewImage, setPreviewImage] = useState<{id: string; uri: string}>(null);
+
+  const [onAccept, setOnAccept] = useState<Function>(()=>{});
+  const [onDelete, setOnDelete] = useState<Function>(()=>{});
+  const [onAdd, setOnAdd] = useState<Function>(()=>{});
+  const [onRetake, setOnRetake] = useState<Function>(()=>{});
+
+  const onClose = () => setPreviewImage(null)
+
+  function  closePreview () {setPreviewImage(null)}
+
 
   const scanDocument = async () => {
     const {scannedImages}: any = await DocumentScanner.scanDocument({
@@ -33,19 +46,28 @@ const HomeScreen = () => {
       maxNumDocuments: 1,
     });
 
-    if (scannedImages) {
-      const newId = uuid.v4();
-      setScannedImage([
-        ...scannedImage,
-        {id: newId as string, uri: scannedImages[0]},
-      ]);
-    }
+const newId:string = uuid.v4();
+
+if(scannedImages.length>0)
+{
+  const newImage:{id: string; uri: string} = {id: newId, uri: scannedImages[0]}
+
+    setPreviewImage(newImage)
+    setImageList([...imageList, newImage])
+    setOnAccept(()=>()=>{closePreview()})
+    setOnAdd(()=>()=>{closePreview();scanDocument()})
+    setOnRetake(()=>()=>{deleteImage(newId);closePreview();scanDocument()})
+    setOnDelete(()=>()=>{deleteImage(newId);closePreview()})
+}
   };
 
-  const ImagePreview = (src: string) => {
-    setShowImage(true);
-    setPreviewImage(src);
-    console.log(src, showImage);
+  const ImagePreview = (image: string) => {
+    
+    setPreviewImage(image);
+    setOnAccept(()=>()=>{closePreview()})
+    setOnAdd(()=>()=>{closePreview();scanDocument()})
+    setOnRetake(()=>()=>{deleteImage(image.id);closePreview();scanDocument()})
+    setOnDelete(()=>()=>{deleteImage(image.id);closePreview()})
   };
 
   return (
@@ -53,39 +75,18 @@ const HomeScreen = () => {
       <View style={styles.container}>
         <Button title="Scan Image" onPress={scanDocument} />
       </View>
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={showImage}
-        onRequestClose={() => {
-          Alert.alert('Modal has been closed.');
-          setShowImage(!showImage);
-        }}>
-        <View>
-          <View style={styles.modalView}>
-            {/* <Text style={styles.modalText}>Document Preview</Text> */}
-            <ImageView
-              images={[{uri: previewImage}]}
-              imageIndex={0}
-              visible={showImage}
-              onRequestClose={() => setShowImage(false)}
-            />
-            <TouchableOpacity
-              style={styles.button}
-              onPress={() => setShowImage(!showImage)}>
-              <Text style={styles.textStyle}>Hide Modal</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
+
+
+{previewImage!= null && <Preview onAccept={onAccept} onRetake={onRetake} onDelete={onDelete} onAdd={onAdd} visible={previewImage!= null} onClose={onClose} filePath={previewImage && previewImage.uri} ></Preview>}
+                
 
       <Text>Scanned Images</Text>
       <FlatGrid
         itemDimension={100}
-        data={scannedImage}
+        data={imageList}
         style={styles.gridView}
         renderItem={({item}) => (
-          <TouchableOpacity onPress={() => ImagePreview(item.uri)}>
+          <TouchableOpacity onPress={() => ImagePreview(item)}>
             <Image
               resizeMode="contain"
               style={styles.itemContainer}

@@ -22,7 +22,7 @@ const App = () => {
     <SafeAreaView>
       <ScrollView contentInsetAdjustmentBehavior="automatic">
         <View style={styles.container}>
-          <HomeScreen />
+         <HomeScreen></HomeScreen>
         </View>
       </ScrollView>
     </SafeAreaView>
