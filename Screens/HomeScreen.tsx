@@ -12,6 +12,8 @@ import {
 import DocumentScanner from 'react-native-document-scanner-plugin';
 
 import {FlatGrid} from 'react-native-super-grid';
+import ImageView from 'react-native-image-viewing';
+import uuid from 'react-native-uuid';
 
 const HomeScreen = () => {
   const [scannedImage, setScannedImage] = useState<{id: string; uri: string}[]>(
@@ -32,7 +34,11 @@ const HomeScreen = () => {
     });
 
     if (scannedImages) {
-      setScannedImage([...scannedImage, {id: '2', uri: scannedImages[0]}]);
+      const newId = uuid.v4();
+      setScannedImage([
+        ...scannedImage,
+        {id: newId as string, uri: scannedImages[0]},
+      ]);
     }
   };
 
@@ -57,11 +63,12 @@ const HomeScreen = () => {
         }}>
         <View>
           <View style={styles.modalView}>
-            <Text style={styles.modalText}>Document Preview</Text>
-            <Image
-              resizeMode="contain"
-              style={styles.previewImageStyle}
-              source={{uri: previewImage}}
+            {/* <Text style={styles.modalText}>Document Preview</Text> */}
+            <ImageView
+              images={[{uri: previewImage}]}
+              imageIndex={0}
+              visible={showImage}
+              onRequestClose={() => setShowImage(false)}
             />
             <TouchableOpacity
               style={styles.button}
@@ -105,7 +112,6 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
     borderRadius: 5,
     height: 150,
-    // width: 100,
   },
   container: {
     display: 'flex',
@@ -120,20 +126,12 @@ const styles = StyleSheet.create({
     gap: '10px',
   },
   modalView: {
+    height: '95%',
     margin: 20,
-    height: '90%',
-    backgroundColor: 'white',
     borderRadius: 20,
     padding: 35,
+    justifyContent: 'flex-end',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
   },
   modalText: {
     marginBottom: 15,
