@@ -5,7 +5,7 @@ import {
   TouchableOpacity,
   Image,
   StyleSheet,
-  // Alert,
+  Alert,
   Modal,
   Button,
 } from 'react-native';
@@ -14,16 +14,25 @@ import DocumentScanner from 'react-native-document-scanner-plugin';
 import {FlatGrid} from 'react-native-super-grid';
 
 const HomeScreen = () => {
-  const [scannedImage, setScannedImage] = useState<string[]>([
-    'file:///storage/emulated/0/Android/data/com.awesometsproject/files/Pictures/DOCUMENT_SCAN_1_20221209_192717153649898559833900.jpg',
-  ]);
+  const [scannedImage, setScannedImage] = useState<{id: string; uri: string}[]>(
+    [
+      {
+        id: '1',
+        uri: 'file:///storage/emulated/0/Android/data/com.awesometsproject/files/Pictures/DOCUMENT_SCAN_1_20221209_192717153649898559833900.jpg',
+      },
+    ],
+  );
   const [showImage, setShowImage] = useState<boolean>(false);
   const [previewImage, setPreviewImage] = useState<string>('');
 
   const scanDocument = async () => {
-    const {scannedImages}: any = await DocumentScanner.scanDocument();
-    if (scannedImages.length > 0) {
-      setScannedImage([...scannedImage, ...scannedImages]);
+    const {scannedImages}: any = await DocumentScanner.scanDocument({
+      letUserAdjustCrop: true,
+      maxNumDocuments: 1,
+    });
+
+    if (scannedImages) {
+      setScannedImage([...scannedImage, {id: '2', uri: scannedImages[0]}]);
     }
   };
 
@@ -38,10 +47,17 @@ const HomeScreen = () => {
       <View style={styles.container}>
         <Button title="Scan Image" onPress={scanDocument} />
       </View>
-      <Modal animationType="slide" transparent={true} visible={showImage}>
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={showImage}
+        onRequestClose={() => {
+          Alert.alert('Modal has been closed.');
+          setShowImage(!showImage);
+        }}>
         <View>
           <View style={styles.modalView}>
-            <Text style={styles.modalText}>Hello World!</Text>
+            <Text style={styles.modalText}>Document Preview</Text>
             <Image
               resizeMode="contain"
               style={styles.previewImageStyle}
@@ -62,15 +78,11 @@ const HomeScreen = () => {
         data={scannedImage}
         style={styles.gridView}
         renderItem={({item}) => (
-          <TouchableOpacity
-            onPress={() => {
-              // Alert.alert(item);
-              ImagePreview(item);
-            }}>
+          <TouchableOpacity onPress={() => ImagePreview(item.uri)}>
             <Image
               resizeMode="contain"
               style={styles.itemContainer}
-              source={{uri: item}}
+              source={{uri: item.uri}}
             />
           </TouchableOpacity>
         )}
@@ -81,8 +93,9 @@ const HomeScreen = () => {
 
 const styles = StyleSheet.create({
   previewImageStyle: {
-    height: 100,
-    width: 100,
+    height: '90%',
+    width: '100%',
+    marginBottom: 10,
   },
   gridView: {
     marginTop: 10,
@@ -108,6 +121,7 @@ const styles = StyleSheet.create({
   },
   modalView: {
     margin: 20,
+    height: '90%',
     backgroundColor: 'white',
     borderRadius: 20,
     padding: 35,
